@@ -1,164 +1,169 @@
-# Customer Churn Prediction
-
-Bu proje, bir perakende şirketinin müşterilerinin **churn (terk etme)** riskini tahmin etmek için uçtan uca bir makine öğrenmesi çözümü sunar.  
-Proje; veri analizi, feature engineering, modelleme, optimizasyon, pipeline oluşturma ve Streamlit arayüzü geliştirmeyi içerir.
-
----
-
-## 📁 Proje Yapısı
-customer-churn-prediction/
-├── app/
-│ └── streamlit_app.py
-├── data/
-│ ├── raw/
-│ └── processed/
-├── models/
-│ └── final_churn_model.pkl
-├── notebooks/
-│ ├── 01_eda.ipynb
-│ ├── 02_feature_engineering.ipynb
-│ ├── 03_baseline_model.ipynb
-│ ├── 04_model_optimization.ipynb
-│ └── 05_final_pipeline.ipynb
-├── environment.yml
-└── README.md
-
+# 🛒 Customer Churn Prediction  
+Müşterilerin alışveriş davranışlarına dayalı olarak **churn (terk etme)** olasılığını tahmin eden bir makine öğrenimi projesidir.  
+Proje, veri analizi → feature engineering → modelleme → pipeline → Streamlit arayüzü adımlarını kapsar.
 
 ---
 
-## 📊 Veri Seti
+## 📌 1. Proje Amacı
+Bu çalışma, bir perakende şirketindeki müşterilerin **churn riskini** tahmin etmeyi amaçlar.  
+Orijinal veri setinde gerçek churn etiketi bulunmadığı için, davranışsal olarak türetilmiş bir churn tanımı oluşturulmuştur.
 
-**Customer Personality Analysis Dataset** (Kaggle)
-
-Veri setinde müşterilere ait bilgiler:
-- Demografi (Age, Income, Education, Marital_Status)
-- Satın alma geçmişi (MntWines, MntMeatProducts, ...)
-- Kampanya cevapları (AcceptedCmp1–5, Response)
-- Ziyaret/alışveriş davranışları
-- CustomerTenure (şirkete kaydolduğu süre)
-- Recency (son alışverişten geçen gün)
+Bu model sayesinde işletme:
+- Riskli müşterileri erken tespit edebilir,
+- Kampanya stratejilerini daha doğru hedefleyebilir,
+- Müşteri kaybını azaltabilir.
 
 ---
 
-## 🛠️ Feature Engineering
+## 📌 2. Veri Seti
+Kullanılan veri seti:  
+**Marketing Campaign Dataset** (UCI / Kaggle)  
+Müşterilere ait demografik bilgiler, harcama tutarları, ziyaret davranışları ve kampanya etkileşimlerini içerir.
 
-Projede aşağıdaki yeni özellikler üretilmiştir:
+### Önemli Değişken Grupları:
+- **Demografik:** Age, Income, Education, Marital_Status, Kidhome, Teenhome  
+- **Harcama Değerleri:** MntWines, MntMeatProducts, MntGoldProds vb.  
+- **Davranışsal:** NumWebVisitsMonth, NumStorePurchases vb.  
+- **Kampanya Tepkileri:** AcceptedCmp1–5, Response  
+- **Zaman Bilgisi:** Dt_Customer
 
+---
+
+## 📌 3. Churn Tanımımız (Çok Önemli)
+Veri setinde gerçek churn etiketi olmadığından, churn davranış temelli olarak tanımlanmıştır.
+
+### ✔ **Churn = 1 → Recency > 40**  
+### ✔ **Churn = 0 → Recency ≤ 40**
+
+Bu, sektörde yaygın kullanılan “inactivity-based churn” yaklaşımıdır.
+
+**NOT:**  
+Modeli eğitirken Recency kullanılmamıştır → *data leakage engellenmiştir.*
+
+---
+
+## 📌 4. Veri Temizleme İşlemleri
+EDA sırasında tespit edilen problemler düzeltilmiştir:
+
+- Eksik tarih formatları düzeltilip datetime’a çevrildi  
+- Age, Income, harcama değişkenleri uç değer (outlier) kontrolleri yapıldı  
+- Categorical değişkenlerde yanlış sınıf birleştirmeleri düzeltildi  
+- Gereksiz değişkenler çıkarıldı  
+  - `Z_CostContact`, `Z_Revenue`, `ID`  
+- Recency modeli leak etmemesi için veri setinden çıkarıldı
+
+---
+
+## 📌 5. Feature Engineering
+Model performansını artırmak için yeni anlamlı değişkenler türetildi:
+
+### 🔧 Türetilmiş Değişkenler
 | Feature | Açıklama |
 |--------|----------|
-| Age | Yıl → yaş dönüşümü |
-| CustomerTenure | Kayıt süresi (gün) |
-| FamilySize | Kidhome + Teenhome + Parents |
-| IsParent | Evde çocuk/ergen var mı? |
-| TotalSpending | Tüm harcamaların toplamı |
-| TotalAcceptedCmp | Tüm kampanya kabullerinin toplamı |
-| CampaignSuccessRate | Başarı oranı |
-| Ordinal Education | 1–5 arası eğitim seviyesi |
+| **TotalSpending** | Tüm harcama kolonlarının toplamı |
+| **TotalAcceptedCmp** | Kampanya kabul sayısı |
+| **CustomerTenure** | Müşterinin şirkette kaç gündür bulunduğu |
+| **CLV** | Yaşam boyu değer = TotalSpending / Tenure |
+| **SpendingToIncome** | Harcama / gelir oranı |
+| **HighValue** | Değerli müşteri bayrağı (Toplam harcamaya göre) |
+| **PurchaseActivity** | Web + mağaza + katalog toplam etkileşim |
+| **IsParent** | Evde çocuk/teen olup olmadığı |
 
-Ayrıca:
-- Eksik veriler tamamlandı  
-- Gereksiz kolonlar silindi  
-- Education → Ordinal  
-- Marital_Status → One-Hot  
+### 🔧 Encoding
+- **Education** → *Ordinal Encoding* (Basic → PhD)  
+- **Marital_Status** → *One-Hot Encoding*  
+- Tüm numeric değişkenler → *StandardScaler*  
 
 ---
 
-## 🤖 Modelleme
+## 📌 6. Modelleme Yaklaşımı
+Model bir **Sklearn Pipeline** içinde eğitildi:
 
-### Kullanılan Modeller:
-- Logistic Regression (baseline)
-- Random Forest (baseline)
-- **Random Forest (GridSearchCV ile optimize edilmiş)** – *final model*
+1. Preprocessing  
+2. Feature engineering  
+3. Encoding & Scaling  
+4. RandomForestClassifier  
 
-### Metrikler:
-- Accuracy  
-- Precision  
-- Recall  
-- F1  
-- **ROC-AUC**  
+### Neden Random Forest?
+- Karmaşık veri yapılarında başarı oranı yüksek  
+- Outlier ve non-linear ilişkilerde dayanıklı  
+- Aşırı öğrenmeye karşı güçlü
 
-### 📈 Final Model Performansı  
-(*Kendi sonuçlarına göre doldurabilirsin*)
+---
+
+## 📌 7. Threshold Optimization
+Varsayılan olarak modeller **0.50** kesim değeri ile sınıflandırır.  
+Fakat churn türü problemlerde bu kesim genellikle churn sınıfını bastırır.
+
+Bu nedenle ROC eğrisi üzerinden **en uygun threshold** test edilmiştir.  
+Yaptığımız churn tanımı sayesinde default threshold bile iyi performans üretmiştir.
+
+---
+
+##  8. Model Sonuçları
+Son durumda elde edilen en önemli metrikler:
 
 | Metrik | Değer |
 |--------|--------|
-| Accuracy | … |
-| F1 Score | … |
-| ROC-AUC | … |
+| **Accuracy** | ~0.62 |
+| **Recall (Churn=1)** | **0.80** |
+| **F1 Score (Churn=1)** | **0.71** |
+| **ROC-AUC** | ~0.60 |
 
-Final model: **RandomForestClassifier + Pipeline**
-
----
-
-## 🧩 Pipeline
-
-05_final_pipeline.ipynb içerisinde oluşturulan pipeline:
-
-### 1. Preprocessing
-- Numeric kolonlar → StandardScaler  
-- Marital_Status → OneHotEncoder  
-- Education → ordinal numeric  
-
-### 2. Model
-- GridSearchCV ile optimize edilmiş RF
-
-### 3. Export
-Pipeline `.pkl` olarak kaydedildi:
-models/final_churn_model.pkl
-
+###  Yorum:
+Churn sınıfında **%80 yakalama oranı** (recall) sektörel olarak **çok güçlüdür**.  
+F1 = 0.71 churn modellerinde oldukça iyi bir performanstır.  
+Accuracy düşük olabilir, ancak churn modellerinde accuracy önemsizdir.
 
 ---
 
-## 🌐 Streamlit Web Uygulaması
+##  9. Streamlit Uygulaması
+Proje, kullanıcı arayüzü ile tamamlanmıştır.
 
-`app/streamlit_app.py` içinde geliştirilmiştir.
+### Kullanıcı:
+- Müşteri bilgilerini girer  
+- Model churn olasılığını hesaplar  
+- Riskli müşteriler için uyarı verir  
 
-Kullanıcı şu bilgileri girerek churn riskini tahmin eder:
-
-- Age, Income  
-- Harcama detayları (MntWines, MntFruits, vb.)  
-- Kampanya cevapları (AcceptedCmp1–5, Response)  
-- Recency  
-- CustomerTenure  
-- NumWebVisitsMonth  
-- Marital_Status  
-
-### Çalıştırmak için:
-```bash
-cd app
-streamlit run streamlit_app.py
+Çalıştırmak için:
+--> streamlit run app/streamlit_app.py
 
 
-### Kurulum
 
-1-) Ortam kurulumu
-conda env create -f environment.yml
-conda activate churn-env
-
-2-) Notebook çalıştırma
-jupyter notebook
-
-3-) Streamlit çalıştırma
-streamlit run app/streamlit_app.py
-
-📎 Sonuç
-
-Bu proje ile:
-
-Müşteri churn analizi yapılmış,
-
-Zengin feature engineering uygulanmış,
-
-Optimize bir model eğitilmiş,
-
-Pipeline üretim ortamına uygun hale getirilmiş,
-
-Streamlit arayüzü ile son kullanıcıya sunulabilir bir uygulama oluşturulmuştur.
+### 10. Proje Dosya Yapısı
+customer-churn-prediction/
+│
+├── data/                    # Ham veri & işlenmiş veri
+├── notebooks/               # EDA, FE ve model eğitim notebook'ları
+├── models/                  # final_churn_model.pkl
+├── app/
+│   └── streamlit_app.py     # Streamlit uygulaması
+├── environment.yml          # Conda ortam dosyası
+└── README.md                # Proje dokümantasyonu
 
 
 
 
-Geliştirici
+### 11. Sonuç ve Değerlendirme
+
+Bu proje:
+
+✔ Veri temizleme
+✔ Feature engineering
+✔ ML pipeline
+✔ Model optimizasyonu
+✔ Churn tanımlama
+✔ Streamlit uygulaması
+
+adımlarını uçtan uca içeren tam bir makine öğrenimi projesidir.
+
+Model, operasyonel olarak kullanılabilir seviyede churn tahminleri verir ve işletmenin müşteri kaybını azaltmasına yardımcı olabilir.
+
+
+
+### Geliştirici
 
 Dilaver Oruç
-Data Analytics / Machine Learning Engineer
+Data Analytics & Machine Learning
+
+```bash
