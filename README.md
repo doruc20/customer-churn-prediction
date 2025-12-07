@@ -1,8 +1,7 @@
 ## 🔗 Demo
 
 Projenin canlı halini buradan deneyebilirsiniz:  
-https://kullanici-adi-customer-churn-prediction.streamlit.app
-
+https://customer-churn-prediction-aev4n8utr33wfyxczfjzhb.streamlit.app
 
 
 # 🛒 Customer Churn Prediction  
