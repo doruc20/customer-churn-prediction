@@ -1,10 +1,17 @@
+## 🔗 Demo
+
+Projenin canlı halini buradan deneyebilirsiniz:  
+https://kullanici-adi-customer-churn-prediction.streamlit.app
+
+
+
 # 🛒 Customer Churn Prediction  
 Bu proje, bir perakende şirketindeki müşterilerin **churn (müşteri kaybı)** olasılığını tahmin etmek için geliştirilmiş uçtan uca bir makine öğrenimi uygulamasıdır.  
 Proje, veri keşfi (EDA), feature engineering, model geliştirme, değerlendirme ve Streamlit arayüzü ile tamamlanmıştır.
 
 ---
 
-## 🎯 Proje Kapsamı  
+## Proje Kapsamı  
 Bu çalışma, **Zero2End Machine Learning Bootcamp** final projesi kapsamında geliştirilmiştir.  
 Amaç, gerçek bir iş senaryosuna benzeyen churn tahmini problemini, veri işleme aşamalarından modellemesine ve basit bir uygulamaya kadar uçtan uca çözmektir.
 
